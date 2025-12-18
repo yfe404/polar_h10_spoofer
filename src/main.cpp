@@ -297,18 +297,20 @@ void setup() {
 
   // PMD Control Point - for commands AND feature reading
   // SDK reads this characteristic to get supported features
+  // IMPORTANT: Must use NOTIFY not INDICATE - SDK expects notifications
   pPmdControlPoint = pPmdService->createCharacteristic(
     BLEUUID(PMD_CONTROL_POINT_UUID),
-    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_INDICATE
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY
   );
   pPmdControlPoint->setCallbacks(new PmdControlPointCallbacks());
   pPmdControlPoint->addDescriptor(new BLE2902());
 
   // Set PMD feature data (returned when characteristic is READ)
   // Format: [reserved, features_byte1, features_byte2, ...]
-  // features_byte1 bit 0 = ECG, bit 1 = PPG, bit 2 = ACC, bit 3 = PPI
-  // For H10 with ECG: data[1] = 0x01 (ECG enabled)
-  uint8_t pmdFeatures[] = {0x00, 0x01, 0x00};  // ECG supported
+  // features_byte1: bit 0 = ECG, bit 1 = PPG, bit 2 = ACC, bit 3 = PPI
+  // features_byte2: bit 1 = SDK_MODE (required for H10 ECG streaming)
+  // For H10: ECG (0x01) + SDK_MODE (0x02 in byte 2)
+  uint8_t pmdFeatures[] = {0x00, 0x01, 0x02};  // ECG + SDK_MODE
   pPmdControlPoint->setValue(pmdFeatures, sizeof(pmdFeatures));
 
   // PMD Data - for ECG streaming
